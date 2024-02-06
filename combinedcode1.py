@@ -7,6 +7,7 @@ Created on Sun Feb  4 16:34:02 2024
 """
 #Laser Cut Box Project #1
 #Max Plavcan
+#David Gordon
 
 #Outline
 #Input Parameters
@@ -20,22 +21,7 @@ Created on Sun Feb  4 16:34:02 2024
 import numpy as np
 import math
 
-#Code for Input Criteria
-
-"""
-while True:
-    try:
-        #Input Parameters for Box geometry
-        length = int(input("Enter your box length(mm): "))
-        width = int(input("Enter your box width(mm): "))
-        height = int(input("Enter your box height(mm): "))
-        
-        break
-    #Error message to display in case the input is not a whole integer
-    except ValueError:
-        print("!Invalid User input! Please try again with whole number integers for length, width and height")
-        print("")
- """       
+#Code for Input Criteria    
         
 def getinputs():
     while True:
@@ -55,6 +41,7 @@ def getinputs():
                 print("Height inputed is too small. Please Try Again")
                 continue
             
+            #calculating maximum allowable dimesions so box fits on a page
             wmax = 2*length + 30
             hmax = 2*height + 40
         
@@ -62,9 +49,15 @@ def getinputs():
                 print("Error: Input values out of range")
                 continue
             
-            order_input = int(input("Enter your fractal order (Please keep input under 8): "))
+            #limiting fractal input since its computationally intense
+            order_input = int(input("Enter your Fractal Order for Pattern #1 (Please keep input under 8): "))
             if order_input > 8:
                 print("Order input is too high. Please Try Again")
+                continue
+            
+            frac1_iter = int(input("Enter the Total Number of Fractal Interations for Pattern #2: "))
+            if frac1_iter > 50:
+                print("Fractal Interations input is too high. Please Try Again")
                 continue
             
             textfront = input("Enter your UNI: ")
@@ -76,15 +69,14 @@ def getinputs():
             if len(texttop) > 14:
                 print("You've reach the maximum amount of characters. Please Try Again")
                 continue
+        
             
-
-            
-            return texttop, textfront, length, width, height, order_input
+            return texttop, textfront, length, width, height, order_input, frac1_iter
 
         except ValueError:
             print("Error: Invalid input. Please enter valid numbers.")
 
-texttop, textfront, length, width, height, order_input = getinputs()        
+texttop, textfront, length, width, height, order_input, frac1_iter = getinputs()        
 
 #Code to Generate SVG file for Box
 
@@ -284,6 +276,7 @@ dmy = 3*h_marg + height + width + mat_thick + 5.5
 uniy = dmy + 5
 
 
+#adjusting digital manufacturing font size so it fits in the front
 if length < 60:
     dmfontsize = 2.5
 elif 60 <= length < 75 or height < 50:
@@ -291,7 +284,7 @@ elif 60 <= length < 75 or height < 50:
 else:
     dmfontsize = 5
 
-
+#adjusting the name font size so it fits on the top
 if length < 65:
     namefont = 4
 elif 65 <= length <= 100:
@@ -305,6 +298,7 @@ f.write(f'<image href="/Users/davidgordon/Documents/Python DM/CUlogored.png" x="
 f.write(f'<text x="{dmx}" y="{uniy}" font-family="Brush Script MT" font-size="{dmfontsize}" font-weight="bold" fill="red">Digital Manufacturing</text>\n')
 
 
+#coordinates for name writing on top
 xname = dmx
 yname = 2*h_marg + height + 15
 texttop = texttop + "'s"
@@ -312,8 +306,11 @@ ybox = yname + 10
 f.write(f'<text x="{xname}" y="{yname}" font-family="Comic Sans MS" font-size="{namefont}" font-weight="bold" fill="red">{texttop}</text>\n')
 f.write(f'<text x="{xname}" y="{ybox}" font-family="Comic Sans MS" font-size="{namefont}" font-weight="bold" fill="red">box</text>\n')
 
-def koch_snowflake(center_x, center_y, order):
-    def koch_snowflake_segment(x1, y1, x2, y2, order):
+
+#snowflake pattern
+
+def snowflake(center_x, center_y, order):
+    def snowflake_segment(x1, y1, x2, y2, order):
         if order == 0:
             return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="red" stroke-width=".25" />\n'
         
@@ -323,20 +320,20 @@ def koch_snowflake(center_x, center_y, order):
         x4 = (x1 + 2 * x2) / 3
         y4 = (y1 + 2 * y2) / 3
 
-        # Tip of the equilateral triangle
+        # Tip of the pattern
         x5 = x3 + (x4 - x3) * math.cos(math.radians(60)) - (y4 - y3) * math.sin(math.radians(60))
         y5 = y3 + (x4 - x3) * math.sin(math.radians(60)) + (y4 - y3) * math.cos(math.radians(60))
 
         # generate each segment
-        segment = koch_snowflake_segment(x1, y1, x3, y3, order - 1)
-        segment += koch_snowflake_segment(x3, y3, x5, y5, order - 1)
-        segment += koch_snowflake_segment(x5, y5, x4, y4, order - 1)
-        segment += koch_snowflake_segment(x4, y4, x2, y2, order - 1)
+        segment = snowflake_segment(x1, y1, x3, y3, order - 1)
+        segment += snowflake_segment(x3, y3, x5, y5, order - 1)
+        segment += snowflake_segment(x5, y5, x4, y4, order - 1)
+        segment += snowflake_segment(x4, y4, x2, y2, order - 1)
 
         return segment
 
-    # Calculate initial points of the equilateral triangle
-    side_length = height/2.5 # You can adjust the size of the snowflake
+    # Calculate initial points of the pattern
+    side_length = height/2.5 # size of pattern
     x1 = center_x - side_length / 2
     y1 = center_y - (side_length * math.sqrt(3) / 6)
     x2 = center_x + side_length / 2
@@ -344,18 +341,42 @@ def koch_snowflake(center_x, center_y, order):
     x3 = center_x
     y3 = center_y + (2 * side_length * math.sqrt(3) / 6)
 
-    # Generate SVG text
-    snowflake = koch_snowflake_segment(x1, y1, x2, y2, order)
-    snowflake += koch_snowflake_segment(x2, y2, x3, y3, order)
-    snowflake += koch_snowflake_segment(x3, y3, x1, y1, order)
+    # generating text
+    snowflake = snowflake_segment(x1, y1, x2, y2, order)
+    snowflake += snowflake_segment(x2, y2, x3, y3, order)
+    snowflake += snowflake_segment(x3, y3, x1, y1, order)
 
     return f'{snowflake}'
 
-
+#postion coordinates for snowflake
 x_tip_snow = BL[0,0]
 y_tip_snow = BL[0,1]
 
-f.write(koch_snowflake(x_tip_snow, y_tip_snow, order_input))
+f.write(snowflake(x_tip_snow, y_tip_snow, order_input))
+
+
+
+#Factal Parameters For Pattern Number 1
+frac_inc = (2*math.pi)/frac1_iter
+frac_rad = 5 #Radius of circle used for fractal pattern
+frac_marg = 10 #Edge margin for fractal pattern
+
+#IF statment to understand what the critical edge dimension is
+if width/2 <= (height/2 -fast_length):
+    frac_rad_pos = width/2 - mat_thick - frac_rad - frac_marg
+else:
+    frac_rad_pos = height/2 - mat_thick - frac_rad - fast_length - frac_marg
+
+#Initiate fractal pattern starting coordinates
+frac_nx = BL[1,0] + frac_rad_pos
+frac_ny = BL[1,1]
+
+
+#Fractal pattern generator
+for i in range(frac1_iter+1):
+    f.write(f'<circle cx="{BL[1,0] - frac_nx}" cy="{BL[1,1] - frac_ny}" r="{frac_rad}" stroke="red" stroke-width=".5" fill="none" /> \n')
+    frac_nx = frac_rad_pos * math.cos((frac_inc * i))
+    frac_ny = frac_rad_pos * math.sin((frac_inc * i))
 
 #Close code string
 f.write(f'</svg>')
